@@ -1,6 +1,9 @@
 package br.unb.tr2.zeroconf;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -9,9 +12,11 @@ import java.util.logging.Logger;
  */
 public class DiscoveryService {
 
-    Logger logger = Logger.getLogger("DiscoveryService");
+    private Logger logger = Logger.getLogger("DiscoveryService");
 
-    HashSet<ServiceAnnouncement> sentAnnouncements = new HashSet<ServiceAnnouncement>();
+    private Set<ServiceAnnouncement> sentAnnouncements = Collections.synchronizedSet(new HashSet<ServiceAnnouncement>());
+
+    private Set<DiscoveryListener> discoveryListeners = Collections.synchronizedSet(new HashSet<DiscoveryListener>());
 
     private DiscoveryService() {
         new Thread(new DiscoveryThread(this)).start();
@@ -22,12 +27,27 @@ public class DiscoveryService {
     }
 
     public void notifyReceivedServiceAnnouncement(ServiceAnnouncement serviceAnnouncement) {
-        if (!sentAnnouncements.contains(serviceAnnouncement))
-            logger.info("New service: " + serviceAnnouncement.getService() + " on address " + serviceAnnouncement.getAddress().getHostAddress() + ":" + serviceAnnouncement.getPort());
+        if (sentAnnouncements.contains(serviceAnnouncement))
+            return;
+        logger.info("New service: " + serviceAnnouncement.getService() + " on address " + serviceAnnouncement.getAddress().getHostAddress() + ":" + serviceAnnouncement.getPort());
+        synchronized (discoveryListeners) {
+            Iterator<DiscoveryListener> i = discoveryListeners.iterator();
+            while (i.hasNext()) {
+                i.next().DSHasReceivedAnnouncement(serviceAnnouncement);
+            }
+        }
     }
 
     public void notifySentServiceAnnouncement(ServiceAnnouncement serviceAnnouncement) {
         sentAnnouncements.add(serviceAnnouncement);
+    }
+
+    public Boolean addListener(DiscoveryListener discoveryListener) {
+        return discoveryListeners.add(discoveryListener);
+    }
+
+    public Boolean removeListener(DiscoveryListener discoveryListener) {
+        return discoveryListeners.remove(discoveryListener);
     }
 
     private static DiscoveryService instance = null;

@@ -1,5 +1,6 @@
 package br.unb.tr2.harmonic.server;
 
+import br.unb.tr2.zeroconf.DiscoveryListener;
 import br.unb.tr2.zeroconf.DiscoveryService;
 import br.unb.tr2.zeroconf.ServiceAnnouncement;
 
@@ -11,13 +12,14 @@ import java.util.logging.Logger;
  * Copyright (C) 2013 Loop EC - All Rights Reserved
  * Created by sandoval for harmonic-server
  */
-public class HarmonicServer {
+public class HarmonicServer implements DiscoveryListener {
+
+    private Logger logger = Logger.getLogger("main");
 
     public static void main(String[] args) throws IOException {
 
         DiscoveryService discoveryService = DiscoveryService.getInstance();
-
-        Logger logger = Logger.getLogger("main");
+        discoveryService.addListener(new HarmonicServer());
 
         discoveryService.sendServiceAnnouncement(new ServiceAnnouncement("Harmonic Series Calculation Server._tcp.local", 44445l, null));
 
@@ -29,5 +31,10 @@ public class HarmonicServer {
             }
         }
 
+    }
+
+    @Override
+    public void DSHasReceivedAnnouncement(ServiceAnnouncement serviceAnnouncement) {
+        logger.info(serviceAnnouncement.getService());
     }
 }
