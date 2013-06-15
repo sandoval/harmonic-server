@@ -24,7 +24,7 @@ public class AnnouncementThread implements Runnable {
 
     public AnnouncementThread(DiscoveryService discoveryService, ServiceAnnouncement serviceAnnouncement) {
         this.discoveryService = discoveryService;
-        this.serviceAnnouncement = new ServiceAnnouncement(serviceAnnouncement);
+        this.serviceAnnouncement = serviceAnnouncement;
     }
 
     @Override
@@ -35,6 +35,7 @@ public class AnnouncementThread implements Runnable {
 
             Enumeration interfaces = NetworkInterface.getNetworkInterfaces();
             while (interfaces.hasMoreElements()) {
+                ServiceAnnouncement serviceAnnouncement = new ServiceAnnouncement(this.serviceAnnouncement);
                 NetworkInterface networkInterface = (NetworkInterface) interfaces.nextElement();
                 if (networkInterface.isLoopback() || !networkInterface.isUp())
                     continue;
