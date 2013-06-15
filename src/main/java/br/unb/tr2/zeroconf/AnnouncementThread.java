@@ -14,17 +14,26 @@ import java.util.logging.Logger;
  */
 public class AnnouncementThread implements Runnable {
 
-    ServiceAnnouncement serviceAnnouncement;
+    private ServiceAnnouncement serviceAnnouncement;
 
-    DiscoveryService discoveryService;
+    private DiscoveryService discoveryService;
 
-    DatagramSocket socket;
+    private DatagramSocket socket;
 
-    Logger logger = Logger.getLogger("AnnoucementThread");
+    private InetAddress destination;
+
+    private Logger logger = Logger.getLogger("AnnoucementThread");
 
     public AnnouncementThread(DiscoveryService discoveryService, ServiceAnnouncement serviceAnnouncement) {
         this.discoveryService = discoveryService;
         this.serviceAnnouncement = serviceAnnouncement;
+        this.destination = null;
+    }
+
+    public AnnouncementThread(DiscoveryService discoveryService, ServiceAnnouncement serviceAnnouncement, InetAddress destination) {
+        this.discoveryService = discoveryService;
+        this.serviceAnnouncement = serviceAnnouncement;
+        this.destination = destination;
     }
 
     @Override
@@ -33,37 +42,44 @@ public class AnnouncementThread implements Runnable {
             socket = new DatagramSocket();
             socket.setBroadcast(true);
 
-            Enumeration interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces.hasMoreElements()) {
-                ServiceAnnouncement serviceAnnouncement = new ServiceAnnouncement(this.serviceAnnouncement);
-                NetworkInterface networkInterface = (NetworkInterface) interfaces.nextElement();
-                if (networkInterface.isLoopback() || !networkInterface.isUp())
-                    continue;
-                for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
-                    InetAddress broadcastAddress = interfaceAddress.getBroadcast();
-                    if (broadcastAddress == null)
+            if(this.destination == null) {
+                Enumeration interfaces = NetworkInterface.getNetworkInterfaces();
+                while (interfaces.hasMoreElements()) {
+                    NetworkInterface networkInterface = (NetworkInterface) interfaces.nextElement();
+                    if (networkInterface.isLoopback() || !networkInterface.isUp())
                         continue;
-                    try {
-                        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-                        ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
-                        serviceAnnouncement.setAddress(interfaceAddress.getAddress());
-                        objectStream.writeObject(serviceAnnouncement);
-                        objectStream.flush();
-                        byte[] data = byteStream.toByteArray();
-
-                        discoveryService.notifySentServiceAnnouncement(serviceAnnouncement);
-                        DatagramPacket packet = new DatagramPacket(data, data.length, broadcastAddress, 44444);
-                        socket.send(packet);
-                    } catch (Exception e) {
-                        logger.severe("Couldn't send broadcast packet: " + e.getMessage());
+                    for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
+                        ServiceAnnouncement announcement = new ServiceAnnouncement(this.serviceAnnouncement);
+                        announcement.setAddress(interfaceAddress.getAddress());
+                        InetAddress broadcastAddress = interfaceAddress.getBroadcast();
+                        if (broadcastAddress != null)
+                            sendAnnouncement(announcement, broadcastAddress);
                     }
                 }
+            } else {
+                ServiceAnnouncement announcement = new ServiceAnnouncement(this.serviceAnnouncement);
+                sendAnnouncement(announcement, this.destination);
             }
+
 
         } catch (SocketException e) {
             logger.log(Level.SEVERE, "Failed to open broadcast socket: " + e.getMessage());
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "IOException while broadcasting: " + e.getMessage());
+        }
+    }
+
+    private void sendAnnouncement(ServiceAnnouncement announcement, InetAddress destination) {
+        try {
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+            ObjectOutputStream objectStream = new ObjectOutputStream(byteStream);
+            objectStream.writeObject(announcement);
+            objectStream.flush();
+            byte[] data = byteStream.toByteArray();
+
+            discoveryService.notifySentServiceAnnouncement(announcement);
+            DatagramPacket packet = new DatagramPacket(data, data.length, destination, 44444);
+            socket.send(packet);
+        } catch (Exception e) {
+            logger.severe("Couldn't send broadcast packet: " + e.getMessage());
         }
     }
 }

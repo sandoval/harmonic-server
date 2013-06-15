@@ -1,5 +1,6 @@
 package br.unb.tr2.zeroconf;
 
+import java.net.InetAddress;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,8 +23,12 @@ public class DiscoveryService {
         new Thread(new DiscoveryThread(this)).start();
     }
 
-    public void sendServiceAnnouncement(ServiceAnnouncement serviceAnnouncement) {
+    public void broadcastServiceAnnouncement(ServiceAnnouncement serviceAnnouncement) {
         new Thread(new AnnouncementThread(this, serviceAnnouncement)).start();
+    }
+
+    public void sendServiceAnnouncement(ServiceAnnouncement serviceAnnouncement, InetAddress destination) {
+        new Thread(new AnnouncementThread(this, serviceAnnouncement, destination)).start();
     }
 
     public void notifyReceivedServiceAnnouncement(ServiceAnnouncement serviceAnnouncement) {

@@ -6,6 +6,8 @@ import br.unb.tr2.zeroconf.ServiceAnnouncement;
 
 import java.io.IOException;
 import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.logging.Logger;
 
 /**
@@ -21,7 +23,7 @@ public class HarmonicServer implements DiscoveryListener {
         DiscoveryService discoveryService = DiscoveryService.getInstance();
         discoveryService.addListener(new HarmonicServer());
 
-        discoveryService.sendServiceAnnouncement(new ServiceAnnouncement("Harmonic Series Calculation Server._tcp.local", 44445l, null));
+        discoveryService.broadcastServiceAnnouncement(new ServiceAnnouncement("Harmonic Series Calculation Server._tcp.local", 44445l, null));
 
         while (true) {
             try {
@@ -35,6 +37,12 @@ public class HarmonicServer implements DiscoveryListener {
 
     @Override
     public void DSHasReceivedAnnouncement(ServiceAnnouncement serviceAnnouncement) {
+        DiscoveryService discoveryService = DiscoveryService.getInstance();
+        try {
+            discoveryService.sendServiceAnnouncement(new ServiceAnnouncement("Harmonic Series Calculation Server._tcp.local", 44445l, InetAddress.getLocalHost()), serviceAnnouncement.getAddress());
+        } catch (UnknownHostException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
         logger.info(serviceAnnouncement.getService());
     }
 }
