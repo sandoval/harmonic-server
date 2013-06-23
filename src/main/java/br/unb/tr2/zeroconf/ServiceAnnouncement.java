@@ -9,6 +9,8 @@ import java.net.InetAddress;
  */
 public class ServiceAnnouncement implements Serializable {
 
+    private static final long serialVersionUID = -628964790327472026L;
+
     private String service;
 
     private Long port;
