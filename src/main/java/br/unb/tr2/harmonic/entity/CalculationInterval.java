@@ -18,8 +18,6 @@ public class CalculationInterval implements Serializable {
 
     private Long executionTime = null;
 
-    private Long sent = null;
-
     public CalculationInterval(Long start, Long end) {
         this.start = start;
         this.end = end;
@@ -49,40 +47,23 @@ public class CalculationInterval implements Serializable {
         return executionTime;
     }
 
-    public Long getSent() {
-        return sent;
-    }
-
-    public void setSent(Long sent) {
-        this.sent = sent;
-    }
-
-    public void wasSent(Long sent) {
-        this.sent = sent;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        CalculationInterval that = (CalculationInterval) o;
+        CalculationInterval interval = (CalculationInterval) o;
 
-        if (end != null ? !end.equals(that.end) : that.end != null) return false;
-        if (executionTime != null ? !executionTime.equals(that.executionTime) : that.executionTime != null)
-            return false;
-        if (result != null ? !result.equals(that.result) : that.result != null) return false;
-        if (start != null ? !start.equals(that.start) : that.start != null) return false;
+        if (end != null ? !end.equals(interval.end) : interval.end != null) return false;
+        if (start != null ? !start.equals(interval.start) : interval.start != null) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result1 = start != null ? start.hashCode() : 0;
-        result1 = 31 * result1 + (end != null ? end.hashCode() : 0);
-        result1 = 31 * result1 + (result != null ? result.hashCode() : 0);
-        result1 = 31 * result1 + (executionTime != null ? executionTime.hashCode() : 0);
-        return result1;
+        int result = start != null ? start.hashCode() : 0;
+        result = 31 * result + (end != null ? end.hashCode() : 0);
+        return result;
     }
 }
