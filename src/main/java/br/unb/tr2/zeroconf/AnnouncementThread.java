@@ -22,18 +22,29 @@ public class AnnouncementThread implements Runnable {
 
     private InetAddress destination;
 
+    private Integer port;
+
     private Logger logger = Logger.getLogger("AnnoucementThread");
 
     public AnnouncementThread(DiscoveryService discoveryService, ServiceAnnouncement serviceAnnouncement) {
         this.discoveryService = discoveryService;
         this.serviceAnnouncement = serviceAnnouncement;
         this.destination = null;
+        this.port = 44444;
     }
 
     public AnnouncementThread(DiscoveryService discoveryService, ServiceAnnouncement serviceAnnouncement, InetAddress destination) {
         this.discoveryService = discoveryService;
         this.serviceAnnouncement = serviceAnnouncement;
         this.destination = destination;
+        this.port = 44444;
+    }
+
+    public AnnouncementThread(DiscoveryService discoveryService, ServiceAnnouncement serviceAnnouncement, InetAddress destination, Integer port) {
+        this.serviceAnnouncement = serviceAnnouncement;
+        this.discoveryService = discoveryService;
+        this.destination = destination;
+        this.port = port;
     }
 
     @Override
@@ -76,7 +87,7 @@ public class AnnouncementThread implements Runnable {
             byte[] data = byteStream.toByteArray();
 
             discoveryService.notifySentServiceAnnouncement(announcement);
-            DatagramPacket packet = new DatagramPacket(data, data.length, destination, 44444);
+            DatagramPacket packet = new DatagramPacket(data, data.length, destination, port);
             socket.send(packet);
         } catch (Exception e) {
             logger.severe("Couldn't send broadcast packet: " + e.getMessage());

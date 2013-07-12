@@ -31,6 +31,10 @@ public class DiscoveryService {
         new Thread(new AnnouncementThread(this, serviceAnnouncement, destination)).start();
     }
 
+    public void sendServiceAnnouncement(ServiceAnnouncement serviceAnnouncement, InetAddress destination, Integer port) {
+        new Thread(new AnnouncementThread(this, serviceAnnouncement, destination, port));
+    }
+
     public void notifyReceivedServiceAnnouncement(ServiceAnnouncement serviceAnnouncement) {
         if (sentAnnouncements.contains(serviceAnnouncement))
             return;
