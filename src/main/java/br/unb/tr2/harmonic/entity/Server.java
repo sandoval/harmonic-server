@@ -14,6 +14,8 @@ import java.util.UUID;
  */
 public class Server implements Serializable {
 
+    private static final long serialVersionUID = -6349713745196753422L;
+
     private InetAddress address;
 
     private Long port;
@@ -21,6 +23,10 @@ public class Server implements Serializable {
     private UUID uuid;
 
     private Socket socket = null;
+
+    private ObjectInputStream ois = null;
+
+    private ObjectOutputStream oos = null;
 
     public Server(InetAddress address, Long port) {
         this(address, port, UUID.randomUUID());
@@ -49,6 +55,8 @@ public class Server implements Serializable {
         try {
             System.out.println("Trying to connect to server " + address.getHostAddress() + ":" + port.intValue());
             socket.connect(new InetSocketAddress(address, port.intValue()), 5000);
+            oos = new ObjectOutputStream(socket.getOutputStream());
+            ois = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
         } catch (Exception e) {
             socket = null;
             e.printStackTrace();
@@ -58,10 +66,10 @@ public class Server implements Serializable {
 
 
     public CalculationInterval getCalculationInterval() throws ConnectionFailedException {
+        if (socket != null && !socket.isConnected())
+            connect();
         CalculationInterval interval = null;
         try {
-            ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
             oos.writeObject("CALCULATION INTERVAL REQUEST");
             oos.flush();
             interval = (CalculationInterval)ois.readObject();
@@ -80,8 +88,9 @@ public class Server implements Serializable {
     }
 
     public void sendCalculationInterval(CalculationInterval interval) throws ConnectionFailedException {
+        if (socket != null && !socket.isConnected())
+            connect();
         try {
-            ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
             oos.writeObject(interval);
             oos.flush();
         } catch (IOException e) {
