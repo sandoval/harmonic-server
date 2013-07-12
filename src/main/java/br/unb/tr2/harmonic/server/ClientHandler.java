@@ -13,8 +13,11 @@ public class ClientHandler implements Runnable {
 
     private Socket socket;
 
+    private CalculationManager calculationManager;
+
     public ClientHandler(Socket socket) {
         this.socket = socket;
+        this.calculationManager = CalculationManager.getInstance();
     }
 
     @Override
@@ -26,12 +29,12 @@ public class ClientHandler implements Runnable {
                 try {
                     String request = (String)ois.readObject();
                     if ("CALCULATION INTERVAL REQUEST".equals(request)) {
-                        CalculationInterval interval = new CalculationInterval(1l, 10000l);
+                        CalculationInterval interval = calculationManager.getCalculationInterval();
                         oos.writeObject(interval);
                         oos.flush();
                         CalculationInterval calculatedInterval = null;
                         calculatedInterval = (CalculationInterval)ois.readObject();
-                        System.out.println("Resultado: " + calculatedInterval.getResult() + " em " + calculatedInterval.getExecutionTime() + "ms.");
+                        calculationManager.addCalculated(calculatedInterval);
                     }
                 } catch (ClassNotFoundException e1) {
                     e1.printStackTrace();
