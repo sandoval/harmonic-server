@@ -32,7 +32,7 @@ public class DiscoveryService {
     }
 
     public void sendServiceAnnouncement(ServiceAnnouncement serviceAnnouncement, InetAddress destination, Integer port) {
-        new Thread(new AnnouncementThread(this, serviceAnnouncement, destination, port));
+        new Thread(new AnnouncementThread(this, serviceAnnouncement, destination, port)).start();
     }
 
     public void notifyReceivedServiceAnnouncement(ServiceAnnouncement serviceAnnouncement) {
