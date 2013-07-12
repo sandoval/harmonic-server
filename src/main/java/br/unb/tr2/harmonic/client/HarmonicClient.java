@@ -44,6 +44,7 @@ public class HarmonicClient {
                 }
             } catch (ConnectionFailedException e) {
                 logger.severe(e.getMessage());
+                server = null;
             }
         }
 

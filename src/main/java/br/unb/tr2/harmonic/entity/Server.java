@@ -2,16 +2,10 @@ package br.unb.tr2.harmonic.entity;
 
 import br.unb.tr2.harmonic.exceptions.ConnectionFailedException;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -53,6 +47,7 @@ public class Server implements Serializable {
     public void connect() throws ConnectionFailedException {
         socket = new Socket();
         try {
+            System.out.println("Trying to connect to server " + address.getHostAddress() + ":" + port.intValue());
             socket.connect(new InetSocketAddress(address, port.intValue()), 5000);
         } catch (Exception e) {
             socket = null;
@@ -65,8 +60,8 @@ public class Server implements Serializable {
     public CalculationInterval getCalculationInterval() throws ConnectionFailedException {
         CalculationInterval interval = null;
         try {
-            ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
             oos.writeObject("CALCULATION INTERVAL REQUEST");
             oos.flush();
             interval = (CalculationInterval)ois.readObject();
