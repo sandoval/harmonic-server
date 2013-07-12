@@ -2,6 +2,8 @@ package br.unb.tr2.zeroconf;
 
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Copyright (C) 2013 Loop EC - All Rights Reserved
@@ -9,13 +11,15 @@ import java.net.InetAddress;
  */
 public class ServiceAnnouncement implements Serializable {
 
-    private static final long serialVersionUID = -628964790327472026L;
+    private static final long serialVersionUID = 8500418596094493560L;
 
     private String service;
 
     private Long port;
 
     private InetAddress address;
+
+    private Map<String, Serializable> parameters;
 
     public ServiceAnnouncement() {
     }
@@ -56,6 +60,11 @@ public class ServiceAnnouncement implements Serializable {
         this.address = address;
     }
 
+    public Map<String, Serializable> getParameters() {
+        if (parameters == null)
+            parameters = new HashMap<String, Serializable>();
+        return parameters;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -65,6 +74,7 @@ public class ServiceAnnouncement implements Serializable {
         ServiceAnnouncement that = (ServiceAnnouncement) o;
 
         if (address != null ? !address.equals(that.address) : that.address != null) return false;
+        if (parameters != null ? !parameters.equals(that.parameters) : that.parameters != null) return false;
         if (port != null ? !port.equals(that.port) : that.port != null) return false;
         if (service != null ? !service.equals(that.service) : that.service != null) return false;
 
@@ -76,6 +86,7 @@ public class ServiceAnnouncement implements Serializable {
         int result = service != null ? service.hashCode() : 0;
         result = 31 * result + (port != null ? port.hashCode() : 0);
         result = 31 * result + (address != null ? address.hashCode() : 0);
+        result = 31 * result + (parameters != null ? parameters.hashCode() : 0);
         return result;
     }
 }

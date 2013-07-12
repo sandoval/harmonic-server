@@ -14,15 +14,48 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
+                <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.4</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>br.unb.tr2.harmonic.server.HarmonicServer</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>server</id>
+                        <configuration>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <archive>
+                                <manifest>
+                                    <mainClass>br.unb.tr2.harmonic.server.HarmonicServer</mainClass>
+                                </manifest>
+                            </archive>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <finalName>harmonic-server</finalName>
+                        </configuration>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>client</id>
+                        <configuration>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <archive>
+                                <manifest>
+                                    <mainClass>br.unb.tr2.harmonic.client.HarmonicClient</mainClass>
+                                </manifest>
+                            </archive>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                            <finalName>harmonic-client</finalName>
+                        </configuration>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
