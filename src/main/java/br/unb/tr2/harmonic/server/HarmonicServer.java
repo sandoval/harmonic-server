@@ -28,17 +28,18 @@ public class HarmonicServer implements DiscoveryListener {
     private InetAddress address;
 
     public static void main(String[] args) throws IOException {
-        HarmonicServer.getInstance();
+        HarmonicServer harmonicServer = HarmonicServer.getInstance();
+        String networkInterfaceName = null;
+
+        for(int i = 0; i < args.length; i++)
+            if ("-i".equals(args[i]) || "--interface".equals(args[i]))
+                networkInterfaceName = args[i+1];
+
+        harmonicServer.start(networkInterfaceName);
     }
 
-    public static HarmonicServer getInstance() {
-        if (instance == null)
-            instance = new HarmonicServer();
-        return instance;
-    }
-
-    private HarmonicServer() {
-        chooseNetworkAddress();
+    private void start(String networkInterface) {
+        chooseNetworkAddress(networkInterface);
 
         try {
             serverSocket = new ServerSocket(0);
@@ -65,22 +66,53 @@ public class HarmonicServer implements DiscoveryListener {
         }
     }
 
-    private void chooseNetworkAddress() {
+    public static HarmonicServer getInstance() {
+        if (instance == null)
+            instance = new HarmonicServer();
+        return instance;
+    }
+
+    private HarmonicServer() {
+
+    }
+
+    private void chooseNetworkAddress(String networkInterfaceName) {
         try {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces.hasMoreElements()) {
-                NetworkInterface n = interfaces.nextElement();
-                if (!n.isVirtual() && !n.isLoopback() && n.isUp()) {
-                    Enumeration<InetAddress> addresses = n.getInetAddresses();
+            if (networkInterfaceName != null) {
+                NetworkInterface networkInterface = NetworkInterface.getByName(networkInterfaceName);
+                if (networkInterface == null)
+                    throw new RuntimeException("Couldn't find network interface " + networkInterfaceName);
+                if (!networkInterface.isVirtual() && !networkInterface.isLoopback() && networkInterface.isUp()) {
+                    Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
                     while (addresses.hasMoreElements()) {
                         InetAddress address = addresses.nextElement();
                         if(Inet4Address.class.isInstance(address)) {
-                            logger.info("Using interface and address: [" + n.getDisplayName() + "] " + address.getHostAddress());
+                            logger.info("Using interface and address: [" + networkInterface.getDisplayName() + "] " + address.getHostAddress());
                             this.address = address;
                             return;
                         }
                     }
+                    throw new RuntimeException("Couldn't find valid address for specified network interface.");
+                } else {
+                    throw new RuntimeException("Specified network interface isn't valid: it's either down, loopback or virtual.");
                 }
+            } else {
+                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                while (interfaces.hasMoreElements()) {
+                    NetworkInterface n = interfaces.nextElement();
+                    if (!n.isVirtual() && !n.isLoopback() && n.isUp()) {
+                        Enumeration<InetAddress> addresses = n.getInetAddresses();
+                        while (addresses.hasMoreElements()) {
+                            InetAddress address = addresses.nextElement();
+                            if(Inet4Address.class.isInstance(address)) {
+                                logger.info("Using interface and address: [" + n.getDisplayName() + "] " + address.getHostAddress() + "\nUse -i option to use a different interface.");
+                                this.address = address;
+                                return;
+                            }
+                        }
+                    }
+                }
+                throw new RuntimeException("Couldn't find valid network interface and address for running.");
             }
         } catch (SocketException e) {
             throw new RuntimeException("Couldn't choose network interface and address.", e);
