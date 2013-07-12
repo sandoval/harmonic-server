@@ -28,8 +28,8 @@ public class CalculationInterval implements Serializable {
     public void calculate() {
         Long start = System.currentTimeMillis();
         result = 0d;
-        for (Long i = start; i <= end; i++)
-            result += 1d / i;
+        for (long i = this.start; i <= end; i++)
+            result += (1d / (double)i);
         executionTime = System.currentTimeMillis() - start;
     }
 
