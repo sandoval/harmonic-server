@@ -23,19 +23,7 @@ public class CalculationManager {
     private Double calculation = 0d;
 
     public CalculationManager() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    System.out.println("Resultado do Cálculo: " + CalculationManager.getInstance().getCalculation());
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
+        new Thread(new Watchdog(this)).start();
     }
 
     public synchronized CalculationInterval getCalculationInterval() {
@@ -59,5 +47,26 @@ public class CalculationManager {
 
     public Double getCalculation() {
         return calculation;
+    }
+
+    private class Watchdog implements Runnable {
+
+        private CalculationManager calculationManager;
+
+        public Watchdog(CalculationManager calculationManager) {
+            this.calculationManager = calculationManager;
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                System.out.println("Resultado do Cálculo: " + calculationManager.getCalculation());
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }
