@@ -35,10 +35,10 @@ public class HarmonicServer implements DiscoveryListener {
             if ("-i".equals(args[i]) || "--interface".equals(args[i]))
                 networkInterfaceName = args[i+1];
 
-        harmonicServer.start(networkInterfaceName);
+        harmonicServer.run(networkInterfaceName);
     }
 
-    private void start(String networkInterface) {
+    private void run(String networkInterface) {
         chooseNetworkAddress(networkInterface);
 
         try {

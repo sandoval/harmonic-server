@@ -69,7 +69,7 @@ public class HarmonicClient {
             Integer leastRunningClients = Integer.MAX_VALUE;
             try {
                 ServerSocket serverSocket = new ServerSocket(0);
-                serverSocket.setSoTimeout(1000);
+                serverSocket.setSoTimeout(5000);
                 discoveryService.broadcastServiceAnnouncement(new ServiceAnnouncement("Harmonic Series Calculation Client._tcp.local",
                         (long) serverSocket.getLocalPort(), serverSocket.getInetAddress()));
                 try {
