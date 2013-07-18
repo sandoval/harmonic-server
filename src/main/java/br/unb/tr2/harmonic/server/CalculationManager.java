@@ -31,8 +31,14 @@ public class CalculationManager {
     }
 
     public synchronized CalculationInterval getCalculationInterval() {
-        CalculationInterval interval = new CalculationInterval(nextIntervalStart, nextIntervalStart + INTERVAL_SIZE - 1);
-        nextIntervalStart += INTERVAL_SIZE;
+        CalculationInterval interval = null;
+        if(!pendingRecalculationIntervals.isEmpty()) {
+            interval = pendingRecalculationIntervals.iterator().next();
+            pendingRecalculationIntervals.remove(interval);
+        } else {
+            interval = new CalculationInterval(nextIntervalStart, nextIntervalStart + INTERVAL_SIZE - 1);
+            nextIntervalStart += INTERVAL_SIZE;
+        }
         calculatingIntervals.add(interval);
         return interval;
     }
@@ -41,6 +47,25 @@ public class CalculationManager {
         if(calculatedIntervals.add(interval))
             calculation += interval.getResult();
         calculatingIntervals.remove(interval);
+    }
+
+    public void recalculate(CalculationInterval interval) {
+        CalculationInterval calculatedInterval = null;
+        synchronized (calculatedIntervals) {
+            Iterator<CalculationInterval> i = calculatedIntervals.iterator();
+            while (i.hasNext()) {
+                CalculationInterval in = i.next();
+                if (interval.equals(in)) {
+                    calculatedInterval = in;
+                    break;
+                }
+            }
+        }
+        if (calculatedInterval != null) {
+            calculation -= calculatedInterval.getResult();
+            calculatedIntervals.remove(calculatedInterval);
+            pendingRecalculationIntervals.add(interval);
+        }
     }
 
     public static CalculationManager getInstance() {
@@ -88,7 +113,6 @@ public class CalculationManager {
 
         public Watchdog(CalculationManager calculationManager) {
             this.calculationManager = calculationManager;
-
         }
 
         @Override

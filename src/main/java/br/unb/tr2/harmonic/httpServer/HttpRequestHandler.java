@@ -56,6 +56,17 @@ public class HttpRequestHandler implements Runnable {
                     else if (user.getRole() == Role.USER)
                         redirect("/user");
                 }
+            } else if (request.startsWith("GET /admin/intervals/recalculate")) {
+                if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
+                    logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
+                    serve401();
+                } else if (loggedUser.getRole() != Role.ADMIN) {
+                    logger.info("User tried to access admin page: " + loggedUser.getUsername());
+                    serve401();
+                } else {
+                    recalculateInterval();
+                    redirect("/admin/intervals");
+                }
             } else if (request.startsWith("GET /admin/intervals")) {
                 if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
                     logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
@@ -114,6 +125,11 @@ public class HttpRequestHandler implements Runnable {
         }
     }
 
+    private void recalculateInterval() {
+        CalculationManager.getInstance().recalculate(
+                new CalculationInterval(new Long(urlParameters.get("recalculationStart")), new Long(urlParameters.get("recalculationEnd"))));
+    }
+
     private void serveIntervalsView() throws IOException {
         writer.write("HTTP/1.1 200 OK\n" +
                 "status: 200 OK\n" +
@@ -124,10 +140,15 @@ public class HttpRequestHandler implements Runnable {
             writer.write("<tr><td>" + interval.getStart() + " - " + interval.getEnd() + "</td>\n" +
                     "<td>" + interval.getResult() + "</td>\n" +
                     "<td>" + interval.getExecutionTime() + "</td>\n" +
-                    "<td></td></tr>");
+                    "<td><a href=\"/admin/intervals/recalculate?" + loginUrlParameters() +
+                    "&recalculationStart=" + interval.getStart() + "&recalculationEnd=" + interval.getEnd() + "\">X</a></td></tr>");
         }
         serveSnippet("admin/intervals/2");
         writer.flush();
+    }
+
+    private String loginUrlParameters() {
+        return "user=" + loggedUser.getUsername() + "&password=" + loggedUser.getPassword();
     }
 
     private void removeUser() {
