@@ -2,7 +2,9 @@ package br.unb.tr2.harmonic.server;
 
 import br.unb.tr2.harmonic.entity.CalculationInterval;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Copyright (C) 2013 Loop EC - All Rights Reserved
@@ -14,9 +16,11 @@ public class CalculationManager {
 
     private static CalculationManager instance;
 
-    private List<CalculationInterval> calculatedIntervals = Collections.synchronizedList(new ArrayList<CalculationInterval>());
+    private Set<CalculationInterval> calculatedIntervals = Collections.synchronizedSet(new HashSet<CalculationInterval>());
 
     private Set<CalculationInterval> calculatingIntervals = Collections.synchronizedSet(new HashSet<CalculationInterval>());
+
+    private Set<CalculationInterval> pendingRecalculationIntervals = Collections.synchronizedSet(new HashSet<CalculationInterval>());
 
     private Long nextIntervalStart = 1l;
 
@@ -34,9 +38,9 @@ public class CalculationManager {
     }
 
     public void addCalculated(CalculationInterval interval) {
-        calculatedIntervals.add(interval);
+        if(calculatedIntervals.add(interval))
+            calculation += interval.getResult();
         calculatingIntervals.remove(interval);
-        calculation += interval.getResult();
     }
 
     public static CalculationManager getInstance() {
@@ -49,18 +53,33 @@ public class CalculationManager {
         return calculation;
     }
 
+    private Set<CalculationInterval> getCalculatingIntervals() {
+        return calculatingIntervals;
+    }
+
+    private Set<CalculationInterval> getPendingRecalculationIntervals() {
+        return pendingRecalculationIntervals;
+    }
+
     private class Watchdog implements Runnable {
 
         private CalculationManager calculationManager;
 
+        private Set<CalculationInterval> lastCalculatingIntervals = Collections.synchronizedSet(new HashSet<CalculationInterval>());
+
         public Watchdog(CalculationManager calculationManager) {
             this.calculationManager = calculationManager;
+
         }
 
         @Override
         public void run() {
             while (true) {
                 System.out.println("Resultado do Cálculo: " + calculationManager.getCalculation());
+                Set<CalculationInterval> recalculationIntervals = new HashSet<CalculationInterval>(lastCalculatingIntervals);
+                recalculationIntervals.retainAll(calculationManager.getCalculatingIntervals());
+                calculationManager.getCalculatingIntervals().removeAll(recalculationIntervals);
+                calculationManager.getPendingRecalculationIntervals().addAll(recalculationIntervals);
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
