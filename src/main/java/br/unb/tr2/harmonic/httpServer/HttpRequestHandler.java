@@ -77,10 +77,21 @@ public class HttpRequestHandler implements Runnable {
                     logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
                     serve401();
                 } else if (loggedUser.getRole() != Role.ADMIN) {
-                    logger.info("User tried to access admin page: " + loggedUser.getUsername());
+                    logger.info("User tried to remove user without rights: " + loggedUser.getUsername());
                     serve401();
                 } else {
                     removeUser();
+                    redirect("/admin");
+                }
+            } else if (request.startsWith("GET /addUser")) {
+                if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
+                    logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
+                    serve401();
+                } else if (loggedUser.getRole() != Role.ADMIN) {
+                    logger.info("User tried to add user without rights: " + loggedUser.getUsername());
+                    serve401();
+                } else {
+                    addUser();
                     redirect("/admin");
                 }
             } else {
@@ -96,6 +107,11 @@ public class HttpRequestHandler implements Runnable {
         httpServer.getUsers().remove(urlParameters.get("removeUser"));
     }
 
+    private void addUser() {
+        User user = new User(urlParameters.get("newusername"), urlParameters.get("newpassword"), Role.valueOf(urlParameters.get("newrole")));
+        httpServer.getUsers().put(urlParameters.get("newusername"), user);
+    }
+
     private void serveAdminView() throws IOException {
         writer.write("HTTP/1.1 200 OK\n" +
                 "status: 200 OK\n" +
@@ -106,6 +122,9 @@ public class HttpRequestHandler implements Runnable {
         serveSnippet("admin/2");
         writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
         serveSnippet("admin/3");
+        writer.write("<input type=\"hidden\" name=\"user\" value=\"" + loggedUser.getUsername() + "\" />");
+        writer.write("<input type=\"hidden\" name=\"password\" value=\"" + loggedUser.getPassword() + "\" />");
+        serveSnippet("admin/3.5");
         Iterator<User> i = httpServer.getUsers().values().iterator();
         while (i.hasNext()) {
             User user = i.next();
