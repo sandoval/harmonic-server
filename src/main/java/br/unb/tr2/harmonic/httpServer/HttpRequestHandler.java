@@ -11,11 +11,11 @@ import java.util.logging.Logger;
  */
 public class HttpRequestHandler implements Runnable {
 
+    private HttpServer httpServer;
+
     private BufferedWriter writer = null;
 
     private BufferedReader reader = null;
-
-    private Map<String,User> users = Collections.synchronizedMap(new HashMap<String, User>());
 
     private String request;
 
@@ -25,11 +25,11 @@ public class HttpRequestHandler implements Runnable {
 
     private Logger logger = Logger.getLogger("HttpRequestHandler");
 
-    public HttpRequestHandler(Socket socket) throws IOException {
+    public HttpRequestHandler(Socket socket, HttpServer httpServer) throws IOException {
         this.socket = socket;
-        users.put("admin", new User("admin", "admin", Role.ADMIN));
-        reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        reader = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+        writer = new BufferedWriter(new OutputStreamWriter(this.socket.getOutputStream()));
+        this.httpServer = httpServer;
     }
 
     @Override
@@ -123,7 +123,7 @@ public class HttpRequestHandler implements Runnable {
     private User retrieveUser(String user, String password) {
         if (user == null || password == null)
             return null;
-        User u = users.get(user);
+        User u = httpServer.getUsers().get(user);
         if (u != null && password.equals(u.getPassword()))
             return u;
         return null;

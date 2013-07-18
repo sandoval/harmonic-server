@@ -46,7 +46,7 @@ public class HarmonicServer implements DiscoveryListener {
 
     private void run(String networkInterface) {
         chooseNetworkAddress(networkInterface);
-        new Thread(new HttpServer()).start();
+        new Thread(HttpServer.getInstance()).start();
 
         try {
             serverSocket = new ServerSocket(0);
