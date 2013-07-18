@@ -24,6 +24,8 @@ public class HttpRequestHandler implements Runnable {
 
     private Map<String,String> urlParameters = null;
 
+    private User loggedUser;
+
     private Socket socket;
 
     private Logger logger = Logger.getLogger("HttpRequestHandler");
@@ -57,6 +59,9 @@ public class HttpRequestHandler implements Runnable {
                 if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
                     logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
                     serve401();
+                } else if (loggedUser.getRole() != Role.ADMIN) {
+                    logger.info("User tried to access admin page: " + loggedUser.getUsername());
+                    serve401();
                 } else {
                     serveAdminView();
                 }
@@ -67,6 +72,17 @@ public class HttpRequestHandler implements Runnable {
                 } else {
                     serveUserView();
                 }
+            } else if (request.startsWith("GET /removeUser")) {
+                if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
+                    logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
+                    serve401();
+                } else if (loggedUser.getRole() != Role.ADMIN) {
+                    logger.info("User tried to access admin page: " + loggedUser.getUsername());
+                    serve401();
+                } else {
+                    removeUser();
+                    redirect("/admin");
+                }
             } else {
                 serve404();
             }
@@ -74,6 +90,10 @@ public class HttpRequestHandler implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void removeUser() {
+        httpServer.getUsers().remove(urlParameters.get("removeUser"));
     }
 
     private void serveAdminView() throws IOException {
@@ -92,7 +112,8 @@ public class HttpRequestHandler implements Runnable {
             writer.write("<tr>\n" +
                     "    <td>" + user.getUsername() + "</td>\n" +
                     "    <td>" + user.getRole().getLabel() + "</td>\n" +
-                    "    <td style=\"text-align: center\"><a href=\"?remove=1\">X</a></td>\n" +
+                    "    <td style=\"text-align: center\"><a href=\"/removeUser?user=" + loggedUser.getUsername() +
+                    "&password=" + loggedUser.getPassword() + "&removeUser=" + user.getUsername() + "\">X</a></td>\n" +
                     "</tr>");
         }
         serveSnippet("admin/4");
@@ -176,8 +197,10 @@ public class HttpRequestHandler implements Runnable {
         if (user == null || password == null)
             return null;
         User u = httpServer.getUsers().get(user);
-        if (u != null && password.equals(u.getPassword()))
+        if (u != null && password.equals(u.getPassword())) {
+            loggedUser = u;
             return u;
+        }
         return null;
     }
 
