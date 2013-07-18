@@ -1,5 +1,7 @@
 package br.unb.tr2.harmonic.httpServer;
 
+import br.unb.tr2.harmonic.server.CalculationManager;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.*;
@@ -62,7 +64,7 @@ public class HttpRequestHandler implements Runnable {
                     logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
                     serve401();
                 } else {
-                    serveView("user");
+                    serveUserView();
                 }
             } else {
                 serve404();
@@ -109,6 +111,26 @@ public class HttpRequestHandler implements Runnable {
             line = fileReader.readLine();
         } while (line != null);
         writer.flush();
+    }
+
+    private void serveUserView() throws IOException {
+        writer.write("HTTP/1.1 200 OK\n" +
+                "status: 200 OK\n" +
+                "version: HTTP/1.1\n" +
+                "content-type: text/html; charset=UTF-8\n\n");
+        serveSnippet("user/1");
+        writer.write(CalculationManager.getInstance().getCalculation().toString());
+        serveSnippet("user/2");
+        writer.flush();
+    }
+
+    private void serveSnippet(String view) throws IOException {
+        BufferedReader fileReader = new BufferedReader(new InputStreamReader(InputStream.class.getResourceAsStream("/html/" + view + ".html")));
+        String line = fileReader.readLine();
+        do {
+            writer.write(line);
+            line = fileReader.readLine();
+        } while (line != null);
     }
 
     private void redirect(String uri) throws IOException {

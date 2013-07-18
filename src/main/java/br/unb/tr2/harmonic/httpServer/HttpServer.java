@@ -18,6 +18,7 @@ public class HttpServer implements Runnable {
 
     private HttpServer() {
         users.put("admin", new User("admin", "admin", Role.ADMIN));
+        users.put("user", new User("user", "user", Role.USER));
     }
 
     @Override
