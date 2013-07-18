@@ -167,7 +167,7 @@ public class HttpRequestHandler implements Runnable {
                 "content-type: text/html; charset=UTF-8\n\n");
         serveSnippet("admin/1");
         writer.write(CalculationManager.getInstance().getCalculation().toString());
-        writer.write(" <span> (<a href=\"/admin/intervals?" + urlParams() + "\">ver intervalos</a>)</span>");
+        writer.write(" <span> (<a href=\"/admin/intervals?" + loginUrlParameters() + "\">ver intervalos</a>)</span>");
         serveSnippet("admin/2");
         writer.write("<tr><td>" + HarmonicServer.getInstance().getServerInstance().getAddress().getHostAddress() +
                 ":" + HarmonicServer.getInstance().getServerInstance().getPort() + "</td></tr>");
@@ -263,7 +263,7 @@ public class HttpRequestHandler implements Runnable {
     }
 
     private void redirect(String uri) throws IOException {
-        String url = uri + "?" +  urlParams();
+        String url = uri + "?" +  loginUrlParameters();
         writer.write("HTTP/1.1 200 ok\n" +
                 "Refresh: 0; url=" + url + "\n" +
                 "Content-type: text/html\n\n");
