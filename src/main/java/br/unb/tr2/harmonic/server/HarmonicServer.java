@@ -23,6 +23,8 @@ public class HarmonicServer implements DiscoveryListener {
 
     private ServerSocket serverSocket;
 
+    private Server serverInstance;
+
     private Logger logger = Logger.getLogger("main");
 
     private InetAddress address;
@@ -46,6 +48,8 @@ public class HarmonicServer implements DiscoveryListener {
         } catch (IOException e) {
             throw new RuntimeException("Couldn't open a socket for server", e);
         }
+
+        serverInstance = new Server(address, (long) serverSocket.getLocalPort());
 
         discoveryService = DiscoveryService.getInstance();
         discoveryService.addListener(this);
@@ -124,7 +128,7 @@ public class HarmonicServer implements DiscoveryListener {
         if ("Harmonic Series Calculation Client._tcp.local".equals(serviceAnnouncement.getService())) {
             try {
                 ServiceAnnouncement response = new ServiceAnnouncement("Harmonic Series Calculation Server._tcp.local", (long)serverSocket.getLocalPort(), InetAddress.getLocalHost());
-                response.getParameters().put("server", new Server(address, (long) serverSocket.getLocalPort()));
+                response.getParameters().put("server", serverInstance);
                 response.getParameters().put("clientInstances", 0);
                 Socket socket = new Socket(serviceAnnouncement.getAddress(), serviceAnnouncement.getPort().intValue());
                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
