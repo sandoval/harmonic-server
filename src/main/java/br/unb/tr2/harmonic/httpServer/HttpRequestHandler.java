@@ -56,6 +56,16 @@ public class HttpRequestHandler implements Runnable {
                     else if (user.getRole() == Role.USER)
                         redirect("/user");
                 }
+            } else if (request.startsWith("GET /admin/intervals")) {
+                if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
+                    logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
+                    serve401();
+                } else if (loggedUser.getRole() != Role.ADMIN) {
+                    logger.info("User tried to access admin page: " + loggedUser.getUsername());
+                    serve401();
+                } else {
+                    serveIntervalsView();
+                }
             } else if (request.startsWith("GET /admin")) {
                 if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
                     logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
@@ -104,6 +114,22 @@ public class HttpRequestHandler implements Runnable {
         }
     }
 
+    private void serveIntervalsView() throws IOException {
+        writer.write("HTTP/1.1 200 OK\n" +
+                "status: 200 OK\n" +
+                "version: HTTP/1.1\n" +
+                "content-type: text/html; charset=UTF-8\n\n");
+        serveSnippet("admin/intervals/1");
+        for (CalculationInterval interval : CalculationManager.getInstance().calculatedIntervalsCollection()) {
+            writer.write("<tr><td>" + interval.getStart() + " - " + interval.getEnd() + "</td>\n" +
+                    "<td>" + interval.getResult() + "</td>\n" +
+                    "<td>" + interval.getExecutionTime() + "</td>\n" +
+                    "<td></td></tr>");
+        }
+        serveSnippet("admin/intervals/2");
+        writer.flush();
+    }
+
     private void removeUser() {
         httpServer.getUsers().remove(urlParameters.get("removeUser"));
     }
@@ -120,6 +146,7 @@ public class HttpRequestHandler implements Runnable {
                 "content-type: text/html; charset=UTF-8\n\n");
         serveSnippet("admin/1");
         writer.write(CalculationManager.getInstance().getCalculation().toString());
+        writer.write(" <span> (<a href=\"/admin/intervals?" + urlParams() + "\">ver intervalos</a>)</span>");
         serveSnippet("admin/2");
         writer.write("<tr><td>" + HarmonicServer.getInstance().getServerInstance().getAddress().getHostAddress() +
                 ":" + HarmonicServer.getInstance().getServerInstance().getPort() + "</td></tr>");

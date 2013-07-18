@@ -2,9 +2,9 @@ package br.unb.tr2.harmonic.server;
 
 import br.unb.tr2.harmonic.entity.CalculationInterval;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+
+import static java.util.Collections.sort;
 
 /**
  * Copyright (C) 2013 Loop EC - All Rights Reserved
@@ -67,6 +67,17 @@ public class CalculationManager {
 
     public Set<CalculationInterval> pendingCalculationIntervals() {
         return new HashSet<CalculationInterval>(calculatingIntervals);
+    }
+
+    public List<CalculationInterval> calculatedIntervalsCollection() {
+        List<CalculationInterval> intervals = new ArrayList<CalculationInterval>(calculatedIntervals);
+        sort(intervals, new Comparator<CalculationInterval>() {
+            @Override
+            public int compare(CalculationInterval o1, CalculationInterval o2) {
+                return o2.getStart().compareTo(o1.getStart());
+            }
+        });
+        return intervals;
     }
 
     private class Watchdog implements Runnable {
