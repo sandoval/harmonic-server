@@ -61,6 +61,14 @@ public class CalculationManager {
         return pendingRecalculationIntervals;
     }
 
+    public int calculatedIntervals() {
+        return calculatedIntervals.size();
+    }
+
+    public Set<CalculationInterval> pendingCalculationIntervals() {
+        return new HashSet<CalculationInterval>(calculatingIntervals);
+    }
+
     private class Watchdog implements Runnable {
 
         private CalculationManager calculationManager;

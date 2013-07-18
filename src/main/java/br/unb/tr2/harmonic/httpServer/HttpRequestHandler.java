@@ -1,5 +1,6 @@
 package br.unb.tr2.harmonic.httpServer;
 
+import br.unb.tr2.harmonic.entity.CalculationInterval;
 import br.unb.tr2.harmonic.server.CalculationManager;
 
 import java.io.*;
@@ -121,6 +122,12 @@ public class HttpRequestHandler implements Runnable {
         serveSnippet("user/1");
         writer.write(CalculationManager.getInstance().getCalculation().toString());
         serveSnippet("user/2");
+        writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
+        serveSnippet("user/3");
+        for(CalculationInterval interval : CalculationManager.getInstance().pendingCalculationIntervals()) {
+            writer.write("<tr><td>" + interval.getStart() + " - " + interval.getEnd() + "</tr></td>");
+        }
+        serveSnippet("user/4");
         writer.flush();
     }
 
