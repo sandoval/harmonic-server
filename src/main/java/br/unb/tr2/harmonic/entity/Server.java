@@ -22,13 +22,13 @@ public class Server implements Serializable {
 
     private UUID uuid;
 
-    private Object usingInstanceIdentification;
+    transient private Object usingInstanceIdentification;
 
-    private Socket socket = null;
+    transient private Socket socket = null;
 
-    private ObjectInputStream ois = null;
+    transient private ObjectInputStream ois = null;
 
-    private ObjectOutputStream oos = null;
+    transient private ObjectOutputStream oos = null;
 
     public Server(InetAddress address, Long port) {
         this(address, port, UUID.randomUUID());
@@ -53,6 +53,8 @@ public class Server implements Serializable {
     }
 
     public void connect(Object identification) throws ConnectionFailedException {
+        if (socket != null && !socket.isClosed())
+            return;
         socket = new Socket();
         if (identification != null)
             usingInstanceIdentification = identification;
@@ -63,8 +65,7 @@ public class Server implements Serializable {
             socket.connect(new InetSocketAddress(address, port.intValue()), 5000);
             oos = new ObjectOutputStream(socket.getOutputStream());
             ois = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
-            oos.writeObject(usingInstanceIdentification);
-            oos.flush();
+            writeObjectToStream(usingInstanceIdentification);
         } catch (Exception e) {
             socket = null;
             e.printStackTrace();
@@ -74,8 +75,7 @@ public class Server implements Serializable {
 
 
     public CalculationInterval getCalculationInterval() throws ConnectionFailedException {
-        if (socket != null && !socket.isConnected())
-            connect(null);
+        connect(null);
         CalculationInterval interval = null;
         try {
             oos.writeObject("CALCULATION INTERVAL REQUEST");
@@ -96,8 +96,7 @@ public class Server implements Serializable {
     }
 
     public void sendCalculationInterval(CalculationInterval interval) throws ConnectionFailedException {
-        if (socket != null && !socket.isConnected())
-            connect(null);
+        connect(null);
         try {
             oos.writeObject(interval);
             oos.flush();
@@ -109,6 +108,92 @@ public class Server implements Serializable {
                 e.printStackTrace();
                 throw new ConnectionFailedException(e.getMessage());
             }
+        }
+    }
+
+    public boolean pingServer() throws ConnectionFailedException {
+        connect(null);
+        try {
+            String response = (String)writeObjectAndRead("PING");
+            if ("PONG".equals(response))
+                return true;
+            return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new ConnectionFailedException(e.getMessage());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private synchronized void writeObjectToStream(Object object) throws IOException {
+        System.out.println("ESCREVENDO: " + object);
+        oos.writeObject(object);
+        oos.flush();
+    }
+
+    private synchronized Object readObjectFromStream() throws IOException,ClassNotFoundException {
+        Object o = ois.readObject();
+        System.out.println("LENDO: " + o);
+        return o;
+    }
+
+    private synchronized Object writeObjectAndRead(Object sendingObject) throws IOException,ClassNotFoundException {
+        writeObjectToStream(sendingObject);
+        return readObjectFromStream();
+    }
+
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
+
+    public void setOos(ObjectOutputStream oos) {
+        this.oos = oos;
+    }
+
+    public void setOis(ObjectInputStream ois) {
+        this.ois = ois;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Server server = (Server) o;
+
+        if (uuid != null ? !uuid.equals(server.uuid) : server.uuid != null) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return uuid != null ? uuid.hashCode() : 0;
+    }
+
+    public void setUsingInstanceIdentification(Object usingInstanceIdentification) {
+        this.usingInstanceIdentification = usingInstanceIdentification;
+    }
+
+    public boolean isConnected() {
+        if (socket == null)
+            return false;
+        return true;
+    }
+
+    public void receiveRequests() throws ConnectionFailedException {
+        try {
+            while (true) {
+                String request = (String) readObjectFromStream();
+                if ("PING".equals(request)) {
+                    writeObjectToStream("PONG");
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 }

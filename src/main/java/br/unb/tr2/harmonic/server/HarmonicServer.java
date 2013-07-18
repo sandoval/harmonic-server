@@ -57,6 +57,11 @@ public class HarmonicServer implements DiscoveryListener {
         discoveryService = DiscoveryService.getInstance();
         discoveryService.addListener(this);
 
+        ServiceAnnouncement serverAnnouncement = new ServiceAnnouncement("Harmonic Series Calculation Server._tcp.local",
+                serverInstance.getPort(), serverInstance.getAddress());
+        serverAnnouncement.getParameters().put("server", serverInstance);
+        discoveryService.broadcastServiceAnnouncement(serverAnnouncement);
+
         while (true) {
             try {
                 Socket socket = serverSocket.accept();
@@ -67,6 +72,13 @@ public class HarmonicServer implements DiscoveryListener {
                 if (connectingInstance instanceof Client) {
                     new Thread(new ClientHandler(socket, ois, oos)).start();
                     logger.info("Connecting instance is a Client.");
+                } else if (connectingInstance instanceof Server) {
+                    Server otherServer = (Server)connectingInstance;
+                    otherServer.setSocket(socket);
+                    otherServer.setOos(oos);
+                    otherServer.setOis(ois);
+                    new Thread(new ServerHandler(serverInstance, otherServer)).start();
+                    logger.info("Connecting instance is a Server.");
                 } else {
                     logger.severe("Connecting instance is of unknown type.");
                 }

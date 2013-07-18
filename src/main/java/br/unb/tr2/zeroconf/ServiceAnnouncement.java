@@ -28,6 +28,7 @@ public class ServiceAnnouncement implements Serializable {
         this.service = serviceAnnouncement.getService();
         this.port = serviceAnnouncement.getPort();
         this.address = serviceAnnouncement.getAddress();
+        this.parameters = new HashMap<String, Serializable>(serviceAnnouncement.getParameters());
     }
 
     public ServiceAnnouncement(String service, Long port, InetAddress address) {
