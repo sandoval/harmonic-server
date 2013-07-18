@@ -1,11 +1,14 @@
 package br.unb.tr2.harmonic.server;
 
+import br.unb.tr2.harmonic.entity.Client;
 import br.unb.tr2.harmonic.entity.Server;
 import br.unb.tr2.zeroconf.DiscoveryListener;
 import br.unb.tr2.zeroconf.DiscoveryService;
 import br.unb.tr2.zeroconf.ServiceAnnouncement;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.*;
 import java.util.Enumeration;
@@ -56,7 +59,17 @@ public class HarmonicServer implements DiscoveryListener {
 
         while (true) {
             try {
-                new Thread(new ClientHandler(serverSocket.accept())).start();
+                Socket socket = serverSocket.accept();
+                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+                logger.info("Reading connecting instance.");
+                Object connectingInstance = ois.readObject();
+                if (connectingInstance instanceof Client) {
+                    new Thread(new ClientHandler(socket, ois, oos)).start();
+                    logger.info("Connecting instance is a Client.");
+                } else {
+                    logger.severe("Connecting instance is of unknown type.");
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 if (!serverSocket.isBound()) {
@@ -66,6 +79,8 @@ public class HarmonicServer implements DiscoveryListener {
                         e1.printStackTrace();
                     }
                 }
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -138,6 +153,8 @@ public class HarmonicServer implements DiscoveryListener {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } else if ("Harmonic Series Calculation Server._tcp.local".equals(serviceAnnouncement.getService())) {
+            new Thread(new ServerHandler(serverInstance, (Server)serviceAnnouncement.getParameters().get("server"))).start();
         }
     }
 }

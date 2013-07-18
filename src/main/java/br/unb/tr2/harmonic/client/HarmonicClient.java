@@ -1,6 +1,7 @@
 package br.unb.tr2.harmonic.client;
 
 import br.unb.tr2.harmonic.entity.CalculationInterval;
+import br.unb.tr2.harmonic.entity.Client;
 import br.unb.tr2.harmonic.entity.Server;
 import br.unb.tr2.harmonic.exceptions.ConnectionFailedException;
 import br.unb.tr2.zeroconf.DiscoveryService;
@@ -25,10 +26,12 @@ public class HarmonicClient {
 
     private Server server = null;
 
+    private Client clientInstance;
+
     private Logger logger = Logger.getLogger("mainClient");
 
     private HarmonicClient() {
-
+        clientInstance = new Client();
         discoveryService = DiscoveryService.getInstance();
 
         while (true) {
@@ -36,7 +39,7 @@ public class HarmonicClient {
                 findServer();
 
             try {
-                server.connect();
+                server.connect(clientInstance);
                 while (true) {
                     CalculationInterval interval = server.getCalculationInterval();
                     interval.calculate();

@@ -11,20 +11,24 @@ import java.net.Socket;
  */
 public class ClientHandler implements Runnable {
 
+    private ObjectInputStream ois;
+
+    private ObjectOutputStream oos;
+
     private Socket socket;
 
     private CalculationManager calculationManager;
 
-    public ClientHandler(Socket socket) {
+    public ClientHandler(Socket socket, ObjectInputStream ois, ObjectOutputStream oos) {
         this.socket = socket;
         this.calculationManager = CalculationManager.getInstance();
+        this.oos = oos;
+        this.ois = ois;
     }
 
     @Override
     public void run() {
         try {
-            ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
             while (true) {
                 try {
                     String request = (String)ois.readObject();

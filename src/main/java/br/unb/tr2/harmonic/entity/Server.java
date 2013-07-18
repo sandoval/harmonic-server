@@ -22,6 +22,8 @@ public class Server implements Serializable {
 
     private UUID uuid;
 
+    private Object usingInstanceIdentification;
+
     private Socket socket = null;
 
     private ObjectInputStream ois = null;
@@ -50,13 +52,19 @@ public class Server implements Serializable {
         return uuid;
     }
 
-    public void connect() throws ConnectionFailedException {
+    public void connect(Object identification) throws ConnectionFailedException {
         socket = new Socket();
+        if (identification != null)
+            usingInstanceIdentification = identification;
+        if (usingInstanceIdentification == null)
+            throw new ConnectionFailedException("Instance that uses the Server object to connect must provide instance identification.");
         try {
-            System.out.println("Trying to connect to server " + address.getHostAddress() + ":" + port.intValue());
+            System.out.println("Trying to connect to server " + address.getHostAddress() + ":" + port.intValue() + " as " + usingInstanceIdentification.getClass().getSimpleName());
             socket.connect(new InetSocketAddress(address, port.intValue()), 5000);
             oos = new ObjectOutputStream(socket.getOutputStream());
             ois = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+            oos.writeObject(usingInstanceIdentification);
+            oos.flush();
         } catch (Exception e) {
             socket = null;
             e.printStackTrace();
@@ -67,7 +75,7 @@ public class Server implements Serializable {
 
     public CalculationInterval getCalculationInterval() throws ConnectionFailedException {
         if (socket != null && !socket.isConnected())
-            connect();
+            connect(null);
         CalculationInterval interval = null;
         try {
             oos.writeObject("CALCULATION INTERVAL REQUEST");
@@ -75,7 +83,7 @@ public class Server implements Serializable {
             interval = (CalculationInterval)ois.readObject();
         } catch (IOException e) {
             if (!socket.isConnected()) {
-                this.connect(); // May throw ConnectionFailedException while trying to connect
+                this.connect(null); // May throw ConnectionFailedException while trying to connect
                 return getCalculationInterval();
             } else {
                 e.printStackTrace();
@@ -89,13 +97,13 @@ public class Server implements Serializable {
 
     public void sendCalculationInterval(CalculationInterval interval) throws ConnectionFailedException {
         if (socket != null && !socket.isConnected())
-            connect();
+            connect(null);
         try {
             oos.writeObject(interval);
             oos.flush();
         } catch (IOException e) {
             if (!socket.isConnected()) {
-                this.connect(); // May throw ConnectionFailedException while trying to connect
+                this.connect(null); // May throw ConnectionFailedException while trying to connect
                 sendCalculationInterval(interval);
             } else {
                 e.printStackTrace();
