@@ -126,6 +126,10 @@ public class HttpRequestHandler implements Runnable {
         serveSnippet("admin/2.5");
         writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
         serveSnippet("admin/3");
+        for(CalculationInterval interval : CalculationManager.getInstance().pendingCalculationIntervals()) {
+            writer.write("<tr><td>" + interval.getStart() + " - " + interval.getEnd() + "</tr></td>");
+        }
+        serveSnippet("admin/3.3");
         writer.write("<input type=\"hidden\" name=\"user\" value=\"" + loggedUser.getUsername() + "\" />");
         writer.write("<input type=\"hidden\" name=\"password\" value=\"" + loggedUser.getPassword() + "\" />");
         serveSnippet("admin/3.5");
