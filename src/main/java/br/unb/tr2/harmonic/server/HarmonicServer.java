@@ -159,4 +159,8 @@ public class HarmonicServer implements DiscoveryListener {
             new Thread(new ServerHandler(serverInstance, (Server)serviceAnnouncement.getParameters().get("server"))).start();
         }
     }
+
+    public Server getServerInstance() {
+        return serverInstance;
+    }
 }

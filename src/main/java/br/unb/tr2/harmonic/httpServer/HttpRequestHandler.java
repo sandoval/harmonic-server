@@ -2,6 +2,7 @@ package br.unb.tr2.harmonic.httpServer;
 
 import br.unb.tr2.harmonic.entity.CalculationInterval;
 import br.unb.tr2.harmonic.server.CalculationManager;
+import br.unb.tr2.harmonic.server.HarmonicServer;
 
 import java.io.*;
 import java.net.Socket;
@@ -120,6 +121,9 @@ public class HttpRequestHandler implements Runnable {
         serveSnippet("admin/1");
         writer.write(CalculationManager.getInstance().getCalculation().toString());
         serveSnippet("admin/2");
+        writer.write("<tr><td>" + HarmonicServer.getInstance().getServerInstance().getAddress().getHostAddress() +
+                ":" + HarmonicServer.getInstance().getServerInstance().getPort() + "</td></tr>");
+        serveSnippet("admin/2.5");
         writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
         serveSnippet("admin/3");
         writer.write("<input type=\"hidden\" name=\"user\" value=\"" + loggedUser.getUsername() + "\" />");
@@ -185,6 +189,9 @@ public class HttpRequestHandler implements Runnable {
         serveSnippet("user/1");
         writer.write(CalculationManager.getInstance().getCalculation().toString());
         serveSnippet("user/2");
+        writer.write("<tr><td>" + HarmonicServer.getInstance().getServerInstance().getAddress().getHostAddress() +
+                ":" + HarmonicServer.getInstance().getServerInstance().getPort() + "</td></tr>");
+        serveSnippet("user/2.5");
         writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
         serveSnippet("user/3");
         for(CalculationInterval interval : CalculationManager.getInstance().pendingCalculationIntervals()) {
