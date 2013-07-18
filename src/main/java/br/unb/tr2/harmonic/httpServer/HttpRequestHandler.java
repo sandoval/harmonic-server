@@ -2,6 +2,7 @@ package br.unb.tr2.harmonic.httpServer;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -14,12 +15,19 @@ public class HttpRequestHandler implements Runnable {
 
     private BufferedReader reader = null;
 
-    Socket socket;
+    private Map<String,User> users = Collections.synchronizedMap(new HashMap<String, User>());
 
-    Logger logger = Logger.getLogger("HttpRequestHandler");
+    private String request;
+
+    private Map<String,String> urlParameters = null;
+
+    private Socket socket;
+
+    private Logger logger = Logger.getLogger("HttpRequestHandler");
 
     public HttpRequestHandler(Socket socket) throws IOException {
         this.socket = socket;
+        users.put("admin", new User("admin", "admin", Role.ADMIN));
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
     }
@@ -27,13 +35,35 @@ public class HttpRequestHandler implements Runnable {
     @Override
     public void run() {
         try {
-            String request = reader.readLine();
+            request = reader.readLine();
+            parseUrlParams();
             if (request.startsWith("GET / ") || request.startsWith("GET /index")) {
                 serveView("index");
+            } else if (request.startsWith("GET /login")) {
+                User user = retrieveUser(urlParameters.get("user"), urlParameters.get("password"));
+                if (user == null) {
+                    logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
+                    serve401();
+                } else {
+                    if (user.getRole() == Role.ADMIN)
+                        redirect("/admin");
+                    else if (user.getRole() == Role.USER)
+                        redirect("/user");
+                }
             } else if (request.startsWith("GET /admin")) {
-                serveView("admin");
+                if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
+                    logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
+                    serve401();
+                } else {
+                    serveView("admin");
+                }
             } else if (request.startsWith("GET /user")) {
-                serveView("user");
+                if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
+                    logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
+                    serve401();
+                } else {
+                    serveView("user");
+                }
             } else {
                 serve404();
             }
@@ -55,6 +85,18 @@ public class HttpRequestHandler implements Runnable {
         writer.flush();
     }
 
+    private void serve401() throws IOException {
+        writer.write("HTTP/1.1 401 Unauthorized\n" +
+                "Content-Type: text/html; charset=UTF-8\n\n");
+        BufferedReader fileReader = new BufferedReader(new InputStreamReader(InputStream.class.getResourceAsStream("/html/401.html")));
+        String line = fileReader.readLine();
+        do {
+            writer.write(line);
+            line = fileReader.readLine();
+        } while (line != null);
+        writer.flush();
+    }
+
     private void serveView(String view) throws IOException {
         writer.write("HTTP/1.1 200 OK\n" +
                 "status: 200 OK\n" +
@@ -67,5 +109,40 @@ public class HttpRequestHandler implements Runnable {
             line = fileReader.readLine();
         } while (line != null);
         writer.flush();
+    }
+
+    private void redirect(String uri) throws IOException {
+        String url = uri + "?" +  urlParams();
+        writer.write("HTTP/1.1 200 ok\n" +
+                "Refresh: 0; url=" + url + "\n" +
+                "Content-type: text/html\n\n");
+        writer.write("Please follow <a href=\"" + url + "\">this link</a>.");
+        writer.flush();
+    }
+
+    private User retrieveUser(String user, String password) {
+        if (user == null || password == null)
+            return null;
+        User u = users.get(user);
+        if (u != null && password.equals(u.getPassword()))
+            return u;
+        return null;
+    }
+
+    private String urlParams() {
+        if (request.indexOf('?') == -1)
+            return null;
+        return request.substring(request.indexOf('?')+1, request.indexOf(' ', request.indexOf('?')));
+    }
+
+    private void parseUrlParams() {
+        String parameters = urlParams();
+        if (parameters != null) {
+            urlParameters = new HashMap<String, String>();
+            for(String param : parameters.split("&")) {
+                String split[] = param.split("=");
+                urlParameters.put(split[0], split[1]);
+            }
+        }
     }
 }
