@@ -58,7 +58,7 @@ public class HttpRequestHandler implements Runnable {
                     logger.info("Failed login attempt: " + urlParameters.get("user") + ":" + urlParameters.get("password"));
                     serve401();
                 } else {
-                    serveView("admin");
+                    serveAdminView();
                 }
             } else if (request.startsWith("GET /user")) {
                 if (retrieveUser(urlParameters.get("user"), urlParameters.get("password")) == null) {
@@ -74,6 +74,29 @@ public class HttpRequestHandler implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void serveAdminView() throws IOException {
+        writer.write("HTTP/1.1 200 OK\n" +
+                "status: 200 OK\n" +
+                "version: HTTP/1.1\n" +
+                "content-type: text/html; charset=UTF-8\n\n");
+        serveSnippet("admin/1");
+        writer.write(CalculationManager.getInstance().getCalculation().toString());
+        serveSnippet("admin/2");
+        writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
+        serveSnippet("admin/3");
+        Iterator<User> i = httpServer.getUsers().values().iterator();
+        while (i.hasNext()) {
+            User user = i.next();
+            writer.write("<tr>\n" +
+                    "    <td>" + user.getUsername() + "</td>\n" +
+                    "    <td>" + user.getRole().getLabel() + "</td>\n" +
+                    "    <td style=\"text-align: center\"><a href=\"?remove=1\">X</a></td>\n" +
+                    "</tr>");
+        }
+        serveSnippet("admin/4");
+        writer.flush();
     }
 
     private void serve404() throws IOException {
