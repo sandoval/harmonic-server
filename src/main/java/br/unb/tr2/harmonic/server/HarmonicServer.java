@@ -2,6 +2,7 @@ package br.unb.tr2.harmonic.server;
 
 import br.unb.tr2.harmonic.entity.Client;
 import br.unb.tr2.harmonic.entity.Server;
+import br.unb.tr2.harmonic.httpServer.HttpServer;
 import br.unb.tr2.zeroconf.DiscoveryListener;
 import br.unb.tr2.zeroconf.DiscoveryService;
 import br.unb.tr2.zeroconf.ServiceAnnouncement;
@@ -45,6 +46,7 @@ public class HarmonicServer implements DiscoveryListener {
 
     private void run(String networkInterface) {
         chooseNetworkAddress(networkInterface);
+        new Thread(HttpServer.getInstance()).start();
 
         try {
             serverSocket = new ServerSocket(0);
@@ -168,5 +170,9 @@ public class HarmonicServer implements DiscoveryListener {
         } else if ("Harmonic Series Calculation Server._tcp.local".equals(serviceAnnouncement.getService())) {
             new Thread(new ServerHandler(serverInstance, (Server)serviceAnnouncement.getParameters().get("server"))).start();
         }
+    }
+
+    public Server getServerInstance() {
+        return serverInstance;
     }
 }

@@ -2,9 +2,9 @@ package br.unb.tr2.harmonic.server;
 
 import br.unb.tr2.harmonic.entity.CalculationInterval;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+
+import static java.util.Collections.sort;
 
 /**
  * Copyright (C) 2013 Loop EC - All Rights Reserved
@@ -31,8 +31,14 @@ public class CalculationManager {
     }
 
     public synchronized CalculationInterval getCalculationInterval() {
-        CalculationInterval interval = new CalculationInterval(nextIntervalStart, nextIntervalStart + INTERVAL_SIZE - 1);
-        nextIntervalStart += INTERVAL_SIZE;
+        CalculationInterval interval = null;
+        if(!pendingRecalculationIntervals.isEmpty()) {
+            interval = pendingRecalculationIntervals.iterator().next();
+            pendingRecalculationIntervals.remove(interval);
+        } else {
+            interval = new CalculationInterval(nextIntervalStart, nextIntervalStart + INTERVAL_SIZE - 1);
+            nextIntervalStart += INTERVAL_SIZE;
+        }
         calculatingIntervals.add(interval);
         return interval;
     }
@@ -41,6 +47,25 @@ public class CalculationManager {
         if(calculatedIntervals.add(interval))
             calculation += interval.getResult();
         calculatingIntervals.remove(interval);
+    }
+
+    public void recalculate(CalculationInterval interval) {
+        CalculationInterval calculatedInterval = null;
+        synchronized (calculatedIntervals) {
+            Iterator<CalculationInterval> i = calculatedIntervals.iterator();
+            while (i.hasNext()) {
+                CalculationInterval in = i.next();
+                if (interval.equals(in)) {
+                    calculatedInterval = in;
+                    break;
+                }
+            }
+        }
+        if (calculatedInterval != null) {
+            calculation -= calculatedInterval.getResult();
+            calculatedIntervals.remove(calculatedInterval);
+            pendingRecalculationIntervals.add(interval);
+        }
     }
 
     public static CalculationManager getInstance() {
@@ -61,6 +86,25 @@ public class CalculationManager {
         return pendingRecalculationIntervals;
     }
 
+    public int calculatedIntervals() {
+        return calculatedIntervals.size();
+    }
+
+    public Set<CalculationInterval> pendingCalculationIntervals() {
+        return new HashSet<CalculationInterval>(calculatingIntervals);
+    }
+
+    public List<CalculationInterval> calculatedIntervalsCollection() {
+        List<CalculationInterval> intervals = new ArrayList<CalculationInterval>(calculatedIntervals);
+        sort(intervals, new Comparator<CalculationInterval>() {
+            @Override
+            public int compare(CalculationInterval o1, CalculationInterval o2) {
+                return o2.getStart().compareTo(o1.getStart());
+            }
+        });
+        return intervals;
+    }
+
     private class Watchdog implements Runnable {
 
         private CalculationManager calculationManager;
@@ -69,7 +113,6 @@ public class CalculationManager {
 
         public Watchdog(CalculationManager calculationManager) {
             this.calculationManager = calculationManager;
-
         }
 
         @Override

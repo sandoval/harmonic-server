@@ -4,6 +4,7 @@ import br.unb.tr2.harmonic.entity.CalculationInterval;
 import br.unb.tr2.harmonic.entity.Client;
 import br.unb.tr2.harmonic.entity.Server;
 import br.unb.tr2.harmonic.exceptions.ConnectionFailedException;
+import br.unb.tr2.harmonic.httpServer.HttpClientServer;
 import br.unb.tr2.zeroconf.DiscoveryService;
 import br.unb.tr2.zeroconf.ServiceAnnouncement;
 
@@ -31,6 +32,9 @@ public class HarmonicClient {
     private Logger logger = Logger.getLogger("mainClient");
 
     private HarmonicClient() {
+    }
+
+    public void run() {
         clientInstance = new Client();
         discoveryService = DiscoveryService.getInstance();
 
@@ -50,11 +54,12 @@ public class HarmonicClient {
                 server = null;
             }
         }
-
     }
 
     public static void main(String[] args) throws IOException {
-        HarmonicClient.getInstance();
+        new Thread(HttpClientServer.getInstance()).start();
+        HarmonicClient harmonicClient = HarmonicClient.getInstance();
+        harmonicClient.run();
     }
 
     public static HarmonicClient getInstance() {
@@ -102,4 +107,7 @@ public class HarmonicClient {
         }
     }
 
+    public Server getServer() {
+        return server;
+    }
 }
