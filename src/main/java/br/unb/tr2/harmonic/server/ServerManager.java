@@ -1,5 +1,6 @@
 package br.unb.tr2.harmonic.server;
 
+import br.unb.tr2.harmonic.entity.Server;
 import br.unb.tr2.harmonic.exceptions.ConnectionFailedException;
 import br.unb.tr2.harmonic.exceptions.ExistingServerException;
 
@@ -7,6 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * Copyright (C) 2013 Loop EC - All Rights Reserved
@@ -16,10 +18,13 @@ public class ServerManager implements Runnable {
 
     private static ServerManager instance;
 
-    private Set<ServerHandler> handlers = Collections.synchronizedSet(new HashSet<ServerHandler>());
+    volatile private Set<Server> servers = Collections.synchronizedSet(new HashSet<Server>());
+
+    private Object instanceIdentification = null;
+
+    private Logger logger = Logger.getLogger("ServerManager");
 
     private ServerManager() {
-        new Thread(this).start();
     }
 
     public static ServerManager getInstance() {
@@ -28,35 +33,52 @@ public class ServerManager implements Runnable {
         return instance;
     }
 
-    public synchronized void addHandler(ServerHandler serverHandler) throws ExistingServerException {
-        Iterator<ServerHandler> i = handlers.iterator();
-        while (i.hasNext()) {
-            ServerHandler handler = i.next();
-            if (!handler.isConnected())
-                handlers.remove(handler);
-        }
-        if (!handlers.add(serverHandler))
-            throw new ExistingServerException();
+    public void initialize(Object instanceIdentification) {
+        this.instanceIdentification = instanceIdentification;
+        new Thread(this).start();
     }
 
     @Override
     public void run() {
-        try {
-            Thread.sleep(5000 + (int)(Math.random()*2000));
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        synchronized (handlers) {
-            Iterator<ServerHandler> i = handlers.iterator();
-            while (i.hasNext()) {
-                ServerHandler handler = i.next();
-                try {
-                    if (handler.pingServer())
-                        System.out.println("Successfully pinged server " + handler.getRemoteServer().getAddress().getHostAddress());
-                } catch (ConnectionFailedException e) {
-                    e.printStackTrace();
+        while (true) {
+            synchronized (servers) {
+                Iterator<Server> i = servers.iterator();
+                while (i.hasNext()) {
+                    Server server = i.next();
+                    if (!server.isConnected()) {
+                        servers.remove(server);
+                        continue;
+                    }
+
+                    try {
+                        if (server.pingServer())
+                            System.out.println("Successfully pinged server " + server.getAddress().getHostAddress());
+                    } catch (ConnectionFailedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+            try {
+                Thread.sleep(5000 + (int)(Math.random()*2000));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
+    }
+
+    public void addServer(Server server) {
+        if (!servers.add(server)) {
+            logger.severe("Tried to add already connected server " + server.getUuid());
+            return;
+        }
+
+        try {
+            server.connect(instanceIdentification);
+        } catch (ConnectionFailedException e) {
+            logger.severe("Failed to connect do server " + server.getUuid() + ": " + e.getMessage());
+            servers.remove(server);
+        }
+
     }
 }

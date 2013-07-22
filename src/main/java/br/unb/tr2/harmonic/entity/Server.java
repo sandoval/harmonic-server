@@ -6,7 +6,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Copyright (C) 2013 Loop EC - All Rights Reserved
@@ -29,6 +29,10 @@ public class Server implements Serializable {
     transient private ObjectInputStream ois = null;
 
     transient private ObjectOutputStream oos = null;
+
+    volatile private List<Object> serverMessages = Collections.synchronizedList(new ArrayList<Object>());
+
+    transient private Thread listenerThread = null;
 
     public Server(InetAddress address, Long port) {
         this(address, port, UUID.randomUUID());
@@ -53,94 +57,106 @@ public class Server implements Serializable {
     }
 
     public void connect(Object identification) throws ConnectionFailedException {
-        if (socket != null && !socket.isClosed())
+        if (socket != null && !socket.isClosed()) {
+            if (listenerThread == null) {
+                listenerThread = new Thread(new ServerListenerThread(this, ois));
+                listenerThread.start();
+            }
             return;
+        }
         socket = new Socket();
         if (identification != null)
             usingInstanceIdentification = identification;
         if (usingInstanceIdentification == null)
-            throw new ConnectionFailedException("Instance that uses the Server object to connect must provide instance identification.");
+            throw new ConnectionFailedException(socket, "Instance that uses the Server object to connect must provide instance identification.");
         try {
             System.out.println("Trying to connect to server " + address.getHostAddress() + ":" + port.intValue() + " as " + usingInstanceIdentification.getClass().getSimpleName());
             socket.connect(new InetSocketAddress(address, port.intValue()), 5000);
             oos = new ObjectOutputStream(socket.getOutputStream());
             ois = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
             writeObjectToStream(usingInstanceIdentification);
+            listenerThread = new Thread(new ServerListenerThread(this, ois));
+            listenerThread.start();
         } catch (Exception e) {
             socket = null;
             e.printStackTrace();
-            throw new ConnectionFailedException(e.getMessage());
+            throw new ConnectionFailedException(socket, e.getMessage());
         }
     }
 
 
     public CalculationInterval getCalculationInterval() throws ConnectionFailedException {
-        connect(null);
-        CalculationInterval interval = null;
         try {
-            oos.writeObject("CALCULATION INTERVAL REQUEST");
-            oos.flush();
-            interval = (CalculationInterval)ois.readObject();
+            writeObjectToStream("CALCULATION INTERVAL REQUEST");
+            long maxTime = System.currentTimeMillis() + 500;
+            while (true) {
+                if (System.currentTimeMillis() > maxTime)
+                    break;
+                synchronized (serverMessages) {
+                    Iterator i = serverMessages.iterator();
+                    while (i.hasNext()) {
+                        Object message = i.next();
+                        if (message instanceof CalculationInterval) {
+                            serverMessages.remove(message);
+                            return (CalculationInterval)message;
+                        }
+                    }
+                }
+            }
         } catch (IOException e) {
             if (!socket.isConnected()) {
                 this.connect(null); // May throw ConnectionFailedException while trying to connect
                 return getCalculationInterval();
             } else {
                 e.printStackTrace();
-                throw new ConnectionFailedException(e.getMessage());
+                throw new ConnectionFailedException(socket, e.getMessage());
             }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         }
-        return interval;
+        return null;
     }
 
     public void sendCalculationInterval(CalculationInterval interval) throws ConnectionFailedException {
-        connect(null);
         try {
-            oos.writeObject(interval);
-            oos.flush();
+            writeObjectToStream(interval);
         } catch (IOException e) {
             if (!socket.isConnected()) {
                 this.connect(null); // May throw ConnectionFailedException while trying to connect
                 sendCalculationInterval(interval);
             } else {
                 e.printStackTrace();
-                throw new ConnectionFailedException(e.getMessage());
+                throw new ConnectionFailedException(socket, e.getMessage());
             }
         }
     }
 
     public boolean pingServer() throws ConnectionFailedException {
-        connect(null);
         try {
-            String response = (String)writeObjectAndRead("PING");
-            if ("PONG".equals(response))
-                return true;
+            writeObjectToStream("PING");
+            long maxTime = System.currentTimeMillis() + 500;
+            while (true) {
+                if (System.currentTimeMillis() > maxTime)
+                    break;
+                synchronized (serverMessages) {
+                    Iterator i = serverMessages.iterator();
+                    while (i.hasNext()) {
+                        Object message = i.next();
+                        if ("PONG".equals(message)) {
+                            serverMessages.remove(message);
+                            return true;
+                        }
+                    }
+                }
+            }
             return false;
         } catch (IOException e) {
             e.printStackTrace();
-            throw new ConnectionFailedException(e.getMessage());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new ConnectionFailedException(socket, e.getMessage());
         }
     }
 
     private synchronized void writeObjectToStream(Object object) throws IOException {
-        System.out.println("ESCREVENDO: " + object);
         oos.writeObject(object);
         oos.flush();
-    }
-
-    private synchronized Object readObjectFromStream() throws IOException,ClassNotFoundException {
-        Object o = ois.readObject();
-        System.out.println("LENDO: " + o);
-        return o;
-    }
-
-    private synchronized Object writeObjectAndRead(Object sendingObject) throws IOException,ClassNotFoundException {
-        writeObjectToStream(sendingObject);
-        return readObjectFromStream();
     }
 
     public void setSocket(Socket socket) {
@@ -172,28 +188,24 @@ public class Server implements Serializable {
         return uuid != null ? uuid.hashCode() : 0;
     }
 
-    public void setUsingInstanceIdentification(Object usingInstanceIdentification) {
-        this.usingInstanceIdentification = usingInstanceIdentification;
-    }
-
     public boolean isConnected() {
         if (socket == null)
             return false;
-        return true;
+        return socket.isConnected() && !socket.isClosed();
     }
 
-    public void receiveRequests() throws ConnectionFailedException {
+    public void receivedServerMessage(Object o) {
         try {
-            while (true) {
-                String request = (String) readObjectFromStream();
-                if ("PING".equals(request)) {
-                    writeObjectToStream("PONG");
-                }
-            }
+            if ("PING".equals(o))
+                writeObjectToStream("PONG");
+            else
+                serverMessages.add(o);
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
         }
+    }
+
+    public Socket getSocket() {
+        return socket;
     }
 }
