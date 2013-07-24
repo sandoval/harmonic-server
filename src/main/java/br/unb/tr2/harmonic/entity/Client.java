@@ -28,6 +28,12 @@ public class Client implements Serializable {
         uuid = UUID.randomUUID();
     }
 
+    public boolean isConnected() {
+        if (socket == null)
+            return false;
+        return socket.isConnected() && !socket.isClosed();
+    }
+
     public void listen() {
         listenerThread = new Thread(new ClientListenerThread(socket, ois, oos));
         listenerThread.start();

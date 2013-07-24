@@ -33,6 +33,8 @@ public class HarmonicServer implements DiscoveryListener {
 
     private InetAddress address;
 
+    private ClientManager clientManager;
+
     public static void main(String[] args) throws IOException {
         HarmonicServer harmonicServer = HarmonicServer.getInstance();
         String networkInterfaceName = null;
@@ -80,6 +82,7 @@ public class HarmonicServer implements DiscoveryListener {
                     client.setOos(oos);
                     client.setOis(ois);
                     client.listen();
+                    clientManager.addClient(client);
                 } else if (connectingInstance instanceof Server) {
                     logger.info("Connecting instance is a Server.");
                     Server otherServer = (Server)connectingInstance;
@@ -112,7 +115,7 @@ public class HarmonicServer implements DiscoveryListener {
     }
 
     private HarmonicServer() {
-
+        clientManager = ClientManager.getInstance();
     }
 
     private void chooseNetworkAddress(String networkInterfaceName) {
@@ -164,7 +167,7 @@ public class HarmonicServer implements DiscoveryListener {
             try {
                 ServiceAnnouncement response = new ServiceAnnouncement("Harmonic Series Calculation Server._tcp.local", (long)serverSocket.getLocalPort(), InetAddress.getLocalHost());
                 response.getParameters().put("server", serverInstance);
-                response.getParameters().put("clientInstances", 0);
+                response.getParameters().put("clientInstances", clientManager.clientInstances());
                 Socket socket = new Socket(serviceAnnouncement.getAddress(), serviceAnnouncement.getPort().intValue());
                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
                 oos.writeObject(response);
@@ -174,7 +177,7 @@ public class HarmonicServer implements DiscoveryListener {
                 e.printStackTrace();
             }
         } else if ("Harmonic Series Calculation Server._tcp.local".equals(serviceAnnouncement.getService())) {
-            ServerManager.getInstance().addServer((Server)serviceAnnouncement.getParameters().get("server"));
+            ServerManager.getInstance().addServer((Server) serviceAnnouncement.getParameters().get("server"));
         }
     }
 
