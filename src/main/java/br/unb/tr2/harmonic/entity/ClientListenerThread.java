@@ -1,16 +1,17 @@
-package br.unb.tr2.harmonic.server;
+package br.unb.tr2.harmonic.entity;
 
-import br.unb.tr2.harmonic.entity.CalculationInterval;
+import br.unb.tr2.harmonic.server.CalculationManager;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 /**
  * Copyright (C) 2013 Loop EC - All Rights Reserved
  * Created by sandoval for harmonic-server
  */
-public class ClientHandler implements Runnable {
-
+public class ClientListenerThread implements Runnable {
     private ObjectInputStream ois;
 
     private ObjectOutputStream oos;
@@ -19,7 +20,7 @@ public class ClientHandler implements Runnable {
 
     private CalculationManager calculationManager;
 
-    public ClientHandler(Socket socket, ObjectInputStream ois, ObjectOutputStream oos) {
+    public ClientListenerThread(Socket socket, ObjectInputStream ois, ObjectOutputStream oos) {
         this.socket = socket;
         this.calculationManager = CalculationManager.getInstance();
         this.oos = oos;

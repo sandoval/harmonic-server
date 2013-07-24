@@ -74,8 +74,12 @@ public class HarmonicServer implements DiscoveryListener {
                 logger.info("Reading connecting instance.");
                 Object connectingInstance = ois.readObject();
                 if (connectingInstance instanceof Client) {
+                    Client client = (Client)connectingInstance;
                     logger.info("Connecting instance is a Client.");
-                    new Thread(new ClientHandler(socket, ois, oos)).start();
+                    client.setSocket(socket);
+                    client.setOos(oos);
+                    client.setOis(ois);
+                    client.listen();
                 } else if (connectingInstance instanceof Server) {
                     logger.info("Connecting instance is a Server.");
                     Server otherServer = (Server)connectingInstance;
