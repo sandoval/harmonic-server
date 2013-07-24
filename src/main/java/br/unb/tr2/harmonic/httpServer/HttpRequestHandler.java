@@ -1,8 +1,10 @@
 package br.unb.tr2.harmonic.httpServer;
 
 import br.unb.tr2.harmonic.entity.CalculationInterval;
+import br.unb.tr2.harmonic.entity.Client;
 import br.unb.tr2.harmonic.entity.Server;
 import br.unb.tr2.harmonic.server.CalculationManager;
+import br.unb.tr2.harmonic.server.ClientManager;
 import br.unb.tr2.harmonic.server.HarmonicServer;
 import br.unb.tr2.harmonic.server.ServerManager;
 
@@ -178,6 +180,10 @@ public class HttpRequestHandler implements Runnable {
         Server server = HarmonicServer.getInstance().getServerInstance();
         writer.write("<tr><td>=> (" + server.getId() + ") " + server.getAddress().getHostAddress() +
                 ":" + server.getPort() + "</td></tr>");
+        writer.write("<tr><th>Clientes Ativos</th></td>");
+        for (Client client : ClientManager.getInstance().getClients()) {
+            writer.write("<tr><td>" + client.getId() + "</td></tr>");
+        }
         serveSnippet("admin/2.5");
         writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
         serveSnippet("admin/3");
@@ -255,6 +261,10 @@ public class HttpRequestHandler implements Runnable {
         Server server = HarmonicServer.getInstance().getServerInstance();
         writer.write("<tr><td>=> (" + server.getId() + ") " + server.getAddress().getHostAddress() +
                 ":" + server.getPort() + "</td></tr>");
+        writer.write("<tr><th>Clientes Ativos</th></td>");
+        for (Client client : ClientManager.getInstance().getClients()) {
+            writer.write("<tr><td>" + client.getId() + "</td></tr>");
+        }
         serveSnippet("user/2.5");
         writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
         serveSnippet("user/3");

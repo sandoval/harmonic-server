@@ -43,6 +43,10 @@ public class Client implements Serializable {
         return uuid;
     }
 
+    public String getId() {
+        return uuid.toString().substring(32);
+    }
+
     public Socket getSocket() {
         return socket;
     }

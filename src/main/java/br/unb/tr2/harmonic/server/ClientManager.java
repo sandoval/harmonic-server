@@ -38,4 +38,8 @@ public class ClientManager {
             instance = new ClientManager();
         return instance;
     }
+
+    public Set<Client> getClients() {
+        return clients;
+    }
 }
