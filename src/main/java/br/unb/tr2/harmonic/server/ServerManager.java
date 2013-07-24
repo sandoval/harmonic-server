@@ -38,6 +38,12 @@ public class ServerManager implements Runnable {
         new Thread(this).start();
     }
 
+    public Set<Server> connectedServers() {
+        synchronized (servers) {
+            return new HashSet<Server>(servers);
+        }
+    }
+
     @Override
     public void run() {
         while (true) {

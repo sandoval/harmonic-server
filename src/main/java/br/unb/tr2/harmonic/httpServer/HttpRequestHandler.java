@@ -1,8 +1,10 @@
 package br.unb.tr2.harmonic.httpServer;
 
 import br.unb.tr2.harmonic.entity.CalculationInterval;
+import br.unb.tr2.harmonic.entity.Server;
 import br.unb.tr2.harmonic.server.CalculationManager;
 import br.unb.tr2.harmonic.server.HarmonicServer;
+import br.unb.tr2.harmonic.server.ServerManager;
 
 import java.io.*;
 import java.net.Socket;
@@ -169,8 +171,13 @@ public class HttpRequestHandler implements Runnable {
         writer.write(CalculationManager.getInstance().getCalculation().toString());
         writer.write(" <span> (<a href=\"/admin/intervals?" + loginUrlParameters() + "\">ver intervalos</a>)</span>");
         serveSnippet("admin/2");
-        writer.write("<tr><td>" + HarmonicServer.getInstance().getServerInstance().getAddress().getHostAddress() +
-                ":" + HarmonicServer.getInstance().getServerInstance().getPort() + "</td></tr>");
+        for (Server server : ServerManager.getInstance().connectedServers()) {
+            writer.write("<tr><td>(" + server.getId() + ") " + server.getAddress().getHostAddress() +
+                    ":" + server.getPort() + "</td></tr>");
+        }
+        Server server = HarmonicServer.getInstance().getServerInstance();
+        writer.write("<tr><td>=> (" + server.getId() + ") " + server.getAddress().getHostAddress() +
+                ":" + server.getPort() + "</td></tr>");
         serveSnippet("admin/2.5");
         writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
         serveSnippet("admin/3");
@@ -241,8 +248,13 @@ public class HttpRequestHandler implements Runnable {
         serveSnippet("user/1");
         writer.write(CalculationManager.getInstance().getCalculation().toString());
         serveSnippet("user/2");
-        writer.write("<tr><td>" + HarmonicServer.getInstance().getServerInstance().getAddress().getHostAddress() +
-                ":" + HarmonicServer.getInstance().getServerInstance().getPort() + "</td></tr>");
+        for (Server server : ServerManager.getInstance().connectedServers()) {
+            writer.write("<tr><td>(" + server.getId() + ") " + server.getAddress().getHostAddress() +
+                    ":" + server.getPort() + "</td></tr>");
+        }
+        Server server = HarmonicServer.getInstance().getServerInstance();
+        writer.write("<tr><td>=> (" + server.getId() + ") " + server.getAddress().getHostAddress() +
+                ":" + server.getPort() + "</td></tr>");
         serveSnippet("user/2.5");
         writer.write("<tr><td>" + CalculationManager.getInstance().calculatedIntervals() + "</td></tr>");
         serveSnippet("user/3");

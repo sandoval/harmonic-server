@@ -60,6 +60,10 @@ public class Server implements Serializable {
         return uuid;
     }
 
+    public String getId() {
+        return uuid.toString().substring(32);
+    }
+
     public void connect(Object identification) throws ConnectionFailedException {
         if (socket != null && !socket.isClosed()) {
             if (listenerThread == null) {
