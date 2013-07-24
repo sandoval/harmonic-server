@@ -1,6 +1,7 @@
 package br.unb.tr2.harmonic.server;
 
 import br.unb.tr2.harmonic.entity.CalculationInterval;
+import br.unb.tr2.harmonic.entity.comparator.IntervalSortAscending;
 
 import java.util.*;
 
@@ -41,6 +42,26 @@ public class CalculationManager {
         }
         calculatingIntervals.add(interval);
         return interval;
+    }
+
+    public Long calculatedUntil() {
+        ArrayList<CalculationInterval> pendingIntervals;
+        Long calculatedUntil;
+        synchronized (calculatingIntervals) {
+            synchronized (pendingRecalculationIntervals) {
+                synchronized (nextIntervalStart) {
+                    pendingIntervals = new ArrayList<CalculationInterval>(calculatedIntervals);
+                    pendingIntervals.addAll(pendingRecalculationIntervals);
+                    calculatedUntil = nextIntervalStart - 1;
+                }
+            }
+        }
+        if (pendingIntervals.isEmpty())
+            return calculatedUntil;
+        else {
+            sort(pendingIntervals, new IntervalSortAscending());
+            return pendingIntervals.get(0).getStart() - 1;
+        }
     }
 
     public void addCalculated(CalculationInterval interval) {
@@ -96,20 +117,44 @@ public class CalculationManager {
 
     public List<CalculationInterval> calculatedIntervalsCollection() {
         List<CalculationInterval> intervals = new ArrayList<CalculationInterval>(calculatedIntervals);
-        sort(intervals, new Comparator<CalculationInterval>() {
-            @Override
-            public int compare(CalculationInterval o1, CalculationInterval o2) {
-                return o2.getStart().compareTo(o1.getStart());
-            }
-        });
+        sort(intervals, new IntervalSortAscending());
         return intervals;
+    }
+
+    public Set<CalculationInterval> getIntervalsSince(Long intervalStart) {
+        Long calculatedUntil = calculatedUntil();
+        HashSet<CalculationInterval> intervals;
+        HashSet<CalculationInterval> removeIntervals = new HashSet<CalculationInterval>();
+        synchronized (calculatedIntervals) {
+            intervals = new HashSet<CalculationInterval>(calculatedIntervals);
+        }
+        for (CalculationInterval interval : intervals)
+            if (interval.getStart() < intervalStart || interval.getStart() > calculatedUntil)
+                removeIntervals.add(interval);
+        intervals.removeAll(removeIntervals);
+        return intervals;
+    }
+
+    public void addAll(Set<CalculationInterval> intervals) {
+        if (intervals == null)
+            return;
+        synchronized (calculatedIntervals) {
+            synchronized (nextIntervalStart) {
+                for (CalculationInterval interval : intervals) {
+                    if (interval.getEnd() > nextIntervalStart)
+                        nextIntervalStart = interval.getEnd() + 1;
+                    if (calculatedIntervals.add(interval))
+                        calculation += interval.getResult();
+                }
+            }
+        }
     }
 
     private class Watchdog implements Runnable {
 
         private CalculationManager calculationManager;
 
-        private Set<CalculationInterval> lastCalculatingIntervals = Collections.synchronizedSet(new HashSet<CalculationInterval>());
+        private Set<CalculationInterval> lastCalculatingIntervals = new HashSet<CalculationInterval>();
 
         public Watchdog(CalculationManager calculationManager) {
             this.calculationManager = calculationManager;
@@ -118,11 +163,11 @@ public class CalculationManager {
         @Override
         public void run() {
             while (true) {
-                System.out.println("Resultado do Cálculo: " + calculationManager.getCalculation());
                 Set<CalculationInterval> recalculationIntervals = new HashSet<CalculationInterval>(lastCalculatingIntervals);
                 recalculationIntervals.retainAll(calculationManager.getCalculatingIntervals());
                 calculationManager.getCalculatingIntervals().removeAll(recalculationIntervals);
                 calculationManager.getPendingRecalculationIntervals().addAll(recalculationIntervals);
+                lastCalculatingIntervals.addAll(calculationManager.getCalculatingIntervals());
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {

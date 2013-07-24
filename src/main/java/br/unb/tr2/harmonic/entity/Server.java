@@ -1,6 +1,10 @@
 package br.unb.tr2.harmonic.entity;
 
+import br.unb.tr2.harmonic.entity.messages.SyncDatabaseRequest;
+import br.unb.tr2.harmonic.entity.messages.SyncDatabaseResponse;
+import br.unb.tr2.harmonic.entity.thread.ServerListenerThread;
 import br.unb.tr2.harmonic.exceptions.ConnectionFailedException;
+import br.unb.tr2.harmonic.server.CalculationManager;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -154,6 +158,15 @@ public class Server implements Serializable {
         }
     }
 
+    public void syncDatabase() throws ConnectionFailedException {
+        try {
+            writeObjectToStream(new SyncDatabaseRequest(CalculationManager.getInstance().calculatedUntil()));
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new ConnectionFailedException(socket, e.getMessage());
+        }
+    }
+
     private synchronized void writeObjectToStream(Object object) throws IOException {
         oos.writeObject(object);
         oos.flush();
@@ -198,7 +211,12 @@ public class Server implements Serializable {
         try {
             if ("PING".equals(o))
                 writeObjectToStream("PONG");
-            else
+            else if (o instanceof SyncDatabaseRequest) {
+                SyncDatabaseRequest request = (SyncDatabaseRequest)o;
+                writeObjectToStream(new SyncDatabaseResponse(request));
+            } else if (o instanceof SyncDatabaseResponse) {
+                CalculationManager.getInstance().addAll(((SyncDatabaseResponse) o).getIntervals());
+            } else
                 serverMessages.add(o);
         } catch (IOException e) {
             e.printStackTrace();

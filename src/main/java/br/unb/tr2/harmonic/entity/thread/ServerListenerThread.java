@@ -1,5 +1,6 @@
-package br.unb.tr2.harmonic.entity;
+package br.unb.tr2.harmonic.entity.thread;
 
+import br.unb.tr2.harmonic.entity.Server;
 import br.unb.tr2.harmonic.exceptions.ConnectionFailedException;
 
 import java.io.IOException;

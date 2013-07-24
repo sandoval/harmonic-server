@@ -1,5 +1,6 @@
-package br.unb.tr2.harmonic.entity;
+package br.unb.tr2.harmonic.entity.thread;
 
+import br.unb.tr2.harmonic.entity.CalculationInterval;
 import br.unb.tr2.harmonic.server.CalculationManager;
 
 import java.io.IOException;

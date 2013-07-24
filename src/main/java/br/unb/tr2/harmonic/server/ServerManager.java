@@ -51,8 +51,7 @@ public class ServerManager implements Runnable {
                     }
 
                     try {
-                        if (server.pingServer())
-                            System.out.println("Successfully pinged server " + server.getAddress().getHostAddress());
+                        server.syncDatabase();
                     } catch (ConnectionFailedException e) {
                         e.printStackTrace();
                     }
